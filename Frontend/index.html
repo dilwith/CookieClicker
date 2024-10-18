@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cookie Clicker with Binary Tree Power-Ups</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    #cookie {
+      width: 200px;
+      height: 200px;
+      background-image: url('./assets/PerfectCookie.webp');
+      background-size: cover;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    #cookie:hover {
+      transform: scale(1.1);
+    }
+
+    #cookie-info, #tree-info {
+      margin: 10px;
+      font-size: 18px;
+    }
+
+    .btn {
+      background-color: #ff9800;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    .btn:hover {
+      background-color: #ff5722;
+    }
+
+    #tree-container {
+      margin-top: 30px;
+      width: 90%;
+      height: 300px;
+      background-color: #222;
+      border: 2px solid white;
+      border-radius: 10px;
+      overflow-y: scroll; /* Barra de rolagem vertical */
+      padding: 10px;
+    }
+
+    .node {
+      background-color: #333;
+      color: white;
+      border: 2px solid white;
+      padding: 15px;
+      margin: 10px;
+      border-radius: 10px;
+      text-align: center;
+      width: 200px;
+    }
+
+    .node.active {
+      border-color: green;
+    }
+
+    .node.disabled {
+      border-color: red;
+    }
+
+    .tree-row {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cookie Clicker com Power-Ups de Árvore Binária</h1>
+  
+  <div id="cookie-info">
+    <p id="cookie-count">Cookies: 0</p>
+    <p id="cookies-per-click">Cookies por clique: 1</p>
+  </div>
+  
+  <button id="cookie"></button>
+
+  <div id="tree-info">
+    <p>Power-ups comprados:</p>
+    <p>Esquerda: <span id="left-powerups">0</span></p>
+    <p>Direita: <span id="right-powerups">0</span></p>
+  </div>
+
+  <!-- Contêiner da árvore binária com barra de rolagem -->
+  <div id="tree-container">
+    <!-- O primeiro nível da árvore -->
+    <div class="tree-row" id="tree-root">
+      <div class="node" id="node-0" data-id="0" data-type="root">
+        Raiz (Início)
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let cookies = 0;
+    let cookiesPerClick = 1;
+    let powerUpCost = 5;
+    let leftPowerUps = 0;
+    let rightPowerUps = 0;
+    let nodesPurchased = 0;
+
+    const cookieBtn = document.getElementById('cookie');
+    const cookieCount = document.getElementById('cookie-count');
+    const cookiesPerClickDisplay = document.getElementById('cookies-per-click');
+    const leftPowerupsDisplay = document.getElementById('left-powerups');
+    const rightPowerupsDisplay = document.getElementById('right-powerups');
+    const treeContainer = document.getElementById('tree-container');
+    const nodeStatus = {};
+
+    cookieBtn.addEventListener('click', () => {
+      cookies += cookiesPerClick;
+      updateDisplay();
+    });
+
+    function updateDisplay() {
+      cookieCount.innerText = `Cookies: ${cookies.toFixed(2)}`;
+      cookiesPerClickDisplay.innerText = `Cookies por clique: ${cookiesPerClick.toFixed(2)}`;
+    }
+
+    function createNode(level, side, cost) {
+      const newNode = document.createElement('div');
+      const nodeId = `node-${nodesPurchased}-${side}`;
+
+      newNode.classList.add('node');
+      newNode.dataset.id = nodesPurchased;
+      newNode.dataset.type = side;
+      newNode.id = nodeId;
+      newNode.innerHTML = `${side === 'left' ? 'Multiplica' : 'Adiciona'} Cookies <br> (Custa ${cost} cookies)`;
+
+      newNode.addEventListener('click', () => {
+        if (cookies >= cost && !nodeStatus[nodeId]) {
+          cookies -= cost;
+          nodesPurchased++;
+
+          if (side === 'left') {
+            cookiesPerClick *= 1.1;
+            leftPowerUps++;
+            disableNode(level, 'right');  // Desativa o outro lado
+          } else {
+            cookiesPerClick += 1;
+            rightPowerUps++;
+            disableNode(level, 'left');   // Desativa o outro lado
+          }
+
+          powerUpCost += 10;
+          newNode.classList.add('active');
+          nodeStatus[nodeId] = true;  // Marca como comprado
+          revealNextLevel(nodesPurchased);
+          updatePowerUpDisplay();
+          updateDisplay();
+        }
+      });
+
+      return newNode;
+    }
+
+    function disableNode(level, side) {
+      const disabledNode = document.getElementById(`node-${level}-${side}`);
+      if (disabledNode && !nodeStatus[disabledNode.id]) {
+        disabledNode.classList.add('disabled');
+        nodeStatus[disabledNode.id] = 'disabled';  // Marca como desativado
+      }
+    }
+
+    function revealNextLevel(parentId) {
+      const newRow = document.createElement('div');
+      newRow.classList.add('tree-row');
+      
+      // Criar dois novos nós para a próxima fila
+      const leftNode = createNode(parentId, 'left', powerUpCost);
+      const rightNode = createNode(parentId, 'right', powerUpCost);
+
+      newRow.appendChild(leftNode);
+      newRow.appendChild(rightNode);
+
+      treeContainer.appendChild(newRow);
+    }
+
+    function updatePowerUpDisplay() {
+      leftPowerupsDisplay.innerText = leftPowerUps;
+      rightPowerupsDisplay.innerText = rightPowerUps;
+    }
+
+
+    // Revela o primeiro nível da árvore
+    revealNextLevel(0);
+
+    updateDisplay();
+  </script>
+</body>
+</html>
